@@ -97,98 +97,85 @@
         </a> |
     </footer>
     <script>
-        async function loadChangelog() {
-            const container =
-                document.getElementById("changelog-container");
-            const username = "farinalten";
-            const repository = "Farinalten-website";
-            const apiUrl =
-                `https://api.github.com/repos/${username}/${repository}/releases`;
+async function loadChangelog() {
 
-            try {
+    const container =
+        document.getElementById("changelog-container");
 
-                const response = await fetch(apiUrl);
+    const username = "farinalten";
+    const repository = "Farinalten-website";
 
-                if (!response.ok) {
-                    throw new Error("GitHub API Error");
-                }
+    const apiUrl =
+        `https://api.github.com/repos/${username}/${repository}/commits`;
 
-                const releases = await response.json();
+    try {
 
-                container.innerHTML = "";
+        const response = await fetch(apiUrl);
 
-                if (releases.length === 0) {
-
-                    container.innerHTML = `
-                        <div class="Box">
-                            <h3 class="title">
-                                Keine Änderungen in letzter Zeit
-                            </h3>
-
-                            <p class="subtitle">
-                                Keine Einträge vorhanden.
-                            </p>
-                        </div>
-                    `;
-
-                    return;
-                }
-
-                releases.forEach(release => {
-
-                    const box = document.createElement("div");
-
-                    box.className = "Box";
-
-                    const formattedDate =
-                        new Date(release.published_at)
-                        .toLocaleDateString("de-DE");
-
-                    const releaseTitle =
-                        release.name || release.tag_name;
-
-                    const releaseBody =
-                        release.body
-                        ? release.body.replace(/\n/g, "<br>")
-                        : "No description provided.";
-
-                    box.innerHTML = `
-                        <h3 class="title">
-                            ${formattedDate}
-                        </h3>
-
-                        <p class="subtitle">
-                            <strong>${releaseTitle}</strong>
-                            <br><br>
-
-                            ${releaseBody}
-                        </p>
-                    `;
-
-                    container.appendChild(box);
-
-                });
-
-            } catch (error) {
-
-                console.error(error);
-
-                container.innerHTML = `
-                    <div class="Box">
-
-                        <h3 class="title">
-                            Fehler!
-                        </h3>
-
-                        <p class="subtitle">
-                           Die Änderungen konnten nicht geladen werden!
-                        </p>
-
-                    </div>
-                `;
-            }
+        if (!response.ok) {
+            throw new Error("GitHub API Error");
         }
-        loadChangelog();
-    </script>
+
+        const commits = await response.json();
+
+        container.innerHTML = "";
+
+        commits.forEach(commitData => {
+
+            const box = document.createElement("div");
+
+            box.className = "Box";
+
+            const commit = commitData.commit;
+
+            const formattedDate =
+                new Date(commit.author.date)
+                .toLocaleDateString("de-DE");
+
+            const commitMessage =
+                commit.message;
+
+            const author =
+                commit.author.name;
+
+            box.innerHTML = `
+                <h3 class="title">
+                    ${formattedDate}
+                </h3>
+
+                <p class="subtitle">
+                    <strong>${author}</strong>
+                    <br><br>
+
+                    ${commitMessage.replace(/\n/g, "<br>")}
+                </p>
+            `;
+
+            container.appendChild(box);
+
+        });
+
+    } catch (error) {
+
+        console.error(error);
+
+        container.innerHTML = `
+            <div class="Box">
+
+                <h3 class="title">
+                    Error!
+                </h3>
+
+                <p class="subtitle">
+                    The latest changes could not be loaded.
+                </p>
+
+            </div>
+        `;
+    }
+}
+
+loadChangelog();
+</script>
 </body>
 </html>
