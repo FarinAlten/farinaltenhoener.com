@@ -8,6 +8,53 @@
     <link rel="icon" href="../../fav-icon.png" type="image/x-icon">
     <link rel="shortcut icon" href="../../fav-icon.png" type="image/x-icon">
 </head>
+<script>
+const viewer = document.getElementById("image-viewer");
+const viewerImage = document.getElementById("viewer-image");
+const viewerCaption = document.getElementById("viewer-caption");
+const closeButton = document.querySelector(".viewer-close");
+
+const images = document.querySelectorAll(".clickable-image");
+
+images.forEach(image => {
+
+    image.addEventListener("click", () => {
+
+        viewer.classList.add("active");
+
+        viewerImage.src = image.src;
+        viewerCaption.textContent = image.alt;
+
+        document.body.style.overflow = "hidden";
+    });
+
+});
+
+function closeViewer() {
+
+    viewer.classList.remove("active");
+
+    document.body.style.overflow = "";
+}
+
+closeButton.addEventListener("click", closeViewer);
+
+viewer.addEventListener("click", (e) => {
+
+    if (e.target === viewer) {
+        closeViewer();
+    }
+
+});
+
+document.addEventListener("keydown", (e) => {
+
+    if (e.key === "Escape") {
+        closeViewer();
+    }
+
+});
+</script>
 <body>
 <noscript><iframe src="https://www.googletagmanager.com/ns.html?id=GTM-535RGT8S"
 height="0" width="0" style="display:none;visibility:hidden"></iframe></noscript>
