@@ -1,11 +1,32 @@
 :root {
-    --bg-color: #e8e8e8;
-    --nav-bg: #e8e8e8;
+    --bg-color: #f5f5f7;
+    --nav-bg: #f5f5f7;
     --card-bg: #ffffff;
-    --border-color: #dcdcdc;
-    --text-main: #111111;
-    --text-muted: #555555;
-    --accent-color: #000000;
+    --border-color: #e5e5ea;
+    --text-main: #1d1d1f;
+    --text-muted: #6e6e73;
+    --accent-color: #0071e3;
+    --hover-border: #1d1d1f;
+    --shadow: rgba(0, 0, 0, 0.08);
+    --footer-bg: #1d1d1f;
+    --footer-text: #ffffff;
+    --radius: 12px;
+}
+
+@media (prefers-color-scheme: dark) {
+    :root {
+        --bg-color: #121212;
+        --nav-bg: #121212;
+        --card-bg: #1e1e1e;
+        --border-color: #2d2d2d;
+        --text-main: #e0e0e0;
+        --text-muted: #a0a0a0;
+        --accent-color: #3498db;
+        --hover-border: #ffffff;
+        --shadow: rgba(0, 0, 0, 0.35);
+        --footer-bg: #0a0a0a;
+        --footer-text: #e0e0e0;
+    }
 }
 
 * {
@@ -28,6 +49,7 @@ body {
     min-height: 100vh;
     padding-top: 100px;
     -webkit-font-smoothing: antialiased;
+    transition: background-color 0.3s ease, color 0.3s ease;
 }
 
 a {
@@ -46,6 +68,7 @@ nav {
     padding: 0 3rem;
     z-index: 1000;
     background-color: var(--nav-bg);
+    transition: background-color 0.3s ease;
 }
 
 .nav-container {
@@ -80,7 +103,7 @@ nav {
     font-size: 0.95rem;
     font-weight: 500;
     color: var(--text-main);
-    transition: opacity 0.2s ease;
+    transition: opacity 0.2s ease, color 0.3s ease;
 }
 
 .nav-link:hover,
@@ -146,21 +169,21 @@ nav {
 .Box {
     background-color: var(--card-bg);
     border: 1px solid var(--border-color);
-    border-radius: 8px;
+    border-radius: var(--radius);
     padding: 1.8rem;
     display: flex;
     flex-direction: column;
     gap: 0.6rem;
     text-decoration: none;
     color: var(--text-main);
-    transition: transform 0.2s ease, box-shadow 0.2s ease, border-color 0.2s ease;
+    transition: transform 0.2s ease, box-shadow 0.2s ease, border-color 0.2s ease, background-color 0.3s ease;
     cursor: pointer;
 }
 
 .Box:hover {
     transform: translateY(-3px);
-    border-color: #111111;
-    box-shadow: 0 8px 20px rgba(0, 0, 0, 0.06);
+    border-color: var(--hover-border);
+    box-shadow: 0 8px 20px var(--shadow);
 }
 
 .Box .title {
@@ -176,14 +199,6 @@ nav {
     margin: 0;
 }
 
-.Box .box-img {
-    width: 100%;
-    height: 160px;
-    object-fit: cover;
-    border-radius: 4px;
-    margin-bottom: 0.5rem;
-}
-
 .image-showcase {
     display: grid;
     grid-template-columns: repeat(auto-fit, minmax(280px, 360px));
@@ -196,12 +211,14 @@ nav {
 .image-card {
     position: relative;
     overflow: hidden;
-    background-color: #111111;
+    background-color: var(--card-bg);
+    border: 1px solid var(--border-color);
     aspect-ratio: 3 / 4;
     cursor: pointer;
     width: 100%;
     margin: 0 auto;
-    border-radius: 6px;
+    border-radius: var(--radius);
+    transition: border-color 0.2s ease, background-color 0.3s ease;
 }
 
 .image-card img {
@@ -289,7 +306,8 @@ nav {
     letter-spacing: 1px;
     text-transform: uppercase;
     text-decoration: none;
-    transition: background 0.2s ease, border-color 0.2s ease;
+    border-radius: 6px;
+    transition: background 0.2s ease, border-color 0.2s ease, color 0.2s ease;
 }
 
 .lightbox-download-btn:hover {
@@ -298,14 +316,16 @@ nav {
 }
 
 footer {
-    background-color: #000000;
-    color: #ffffff;
-    padding: 1.2rem 2rem;
+    background-color: var(--footer-bg);
+    color: var(--footer-text);
+    padding: 1.5rem 2rem;
     display: flex;
     justify-content: space-between;
     align-items: center;
-    font-size: 0.8rem;
+    font-size: 0.85rem;
     margin-top: 4rem;
+    border-top: 1px solid var(--border-color);
+    transition: background-color 0.3s ease, border-color 0.3s ease;
 }
 
 .footer-links {
@@ -315,13 +335,13 @@ footer {
 }
 
 .footer-links a {
-    color: #ffffff;
+    color: var(--footer-text);
     text-decoration: underline;
     transition: opacity 0.2s ease;
 }
 
 .footer-links a:hover {
-    opacity: 0.8;
+    opacity: 0.7;
 }
 
 @media (max-width: 850px) {
@@ -344,11 +364,12 @@ footer {
         left: 0;
         width: 100%;
         background-color: var(--nav-bg);
+        border-bottom: 1px solid var(--border-color);
         flex-direction: column;
         gap: 0;
         padding: 1.5rem 0;
         transform: translateY(-150%);
-        transition: transform 0.3s ease;
+        transition: transform 0.3s ease, background-color 0.3s ease;
         opacity: 0;
         visibility: hidden;
     }
