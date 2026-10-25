@@ -1,0 +1,476 @@
+
+
+<!DOCTYPE html>
+<html lang="de">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=400, height=240, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>Super Mario 3DS Parkour</title>
+  <style type="text/css">
+    /* Reset & Basis-Setup für Nintendo 3DS Top Screen (400x240 Pixel) */
+    * {
+      -webkit-box-sizing: border-box;
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
+    html, body {
+      width: 100%;
+      height: 100%;
+      margin: 0;
+      padding: 0;
+      overflow: hidden;
+      background: #000000;
+      font-family: sans-serif;
+    }
+
+    /* Haupt-Bühne: Exakt 400x240 Pixel (3DS Screen) */
+    .viewport {
+      position: relative;
+      width: 400px;
+      height: 240px;
+      margin: 0 auto;
+      overflow: hidden;
+      background-color: #6b8cff; /* Klassisches NES-Himmelblau */
+      image-rendering: -webkit-optimize-contrast;
+      image-rendering: crisp-edges;
+      image-rendering: pixelated;
+    }
+
+    /* --- HINTERGRUND (Parallax) --- */
+    .clouds {
+      position: absolute;
+      top: 12px;
+      left: 0;
+      width: 800px;
+      height: 40px;
+      background-image: url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="200" height="40" shape-rendering="crispEdges"><path d="M 20 30 L 20 16 L 30 16 L 30 8 L 60 8 L 60 16 L 80 16 L 80 30 Z M 120 26 L 120 12 L 132 12 L 132 4 L 156 4 L 156 12 L 170 12 L 170 26 Z" fill="%23ffffff"/></svg>');
+      background-repeat: repeat-x;
+      -webkit-animation: cloud-scroll 16s linear infinite;
+      animation: cloud-scroll 16s linear infinite;
+    }
+
+    .bushes {
+      position: absolute;
+      bottom: 32px;
+      left: 0;
+      width: 800px;
+      height: 20px;
+      background-image: url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="200" height="20" shape-rendering="crispEdges"><path d="M 10 20 L 10 10 L 20 10 L 20 4 L 40 4 L 40 10 L 50 10 L 50 20 Z M 130 20 L 130 12 L 140 12 L 140 6 L 160 6 L 160 12 L 170 12 L 170 20 Z" fill="%2300a800"/><path d="M 15 10 L 15 6 L 25 6 Z M 135 12 L 135 8 L 145 8 Z" fill="%2380d010"/></svg>');
+      background-repeat: repeat-x;
+      -webkit-animation: world-move 8s linear infinite;
+      animation: world-move 8s linear infinite;
+    }
+
+    /* --- PARCOUR LEVEL & GEOMETRIE ---
+       Levelbreite = 1200px. Bei 8s Dauer bewegt sich die Welt mit 150px/Sekunde.
+    */
+    .level-world {
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 1200px;
+      height: 240px;
+      -webkit-animation: world-move 8s linear infinite;
+      animation: world-move 8s linear infinite;
+    }
+
+    /* Erdboden mit Grasoberfläche */
+    .ground {
+      position: absolute;
+      bottom: 0;
+      height: 32px;
+      background-color: #c84c0c;
+      background-image: url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" shape-rendering="crispEdges"><rect x="0" y="0" width="16" height="16" fill="%23c84c0c"/><rect x="0" y="0" width="16" height="4" fill="%2300a800"/><rect x="0" y="4" width="16" height="2" fill="%23fc9838"/><rect x="0" y="15" width="16" height="1" fill="%23000000"/><rect x="15" y="0" width="1" height="16" fill="%23000000"/></svg>');
+    }
+
+    /* Bodensegmente & exakte Abgründe (Gaps) */
+    .g-1 { left: 0px; width: 380px; }       /* Erster Boden bis X=380 */
+    /* Gap 1: X=380 bis X=470 (Breite: 90px) */
+    .g-2 { left: 470px; width: 330px; }     /* Zweiter Boden X=470 bis X=800 */
+    /* Gap 2: X=800 bis X=900 (Breite: 100px) */
+    .g-3 { left: 900px; width: 300px; }     /* Dritter Boden X=900 bis X=1200 */
+
+    /* Grüne Röhren */
+    .pipe {
+      position: absolute;
+      bottom: 32px;
+      width: 32px;
+      background: #00a800;
+      border: 2px solid #000;
+      border-bottom: none;
+    }
+    .pipe::before {
+      content: '';
+      position: absolute;
+      top: -10px;
+      left: -4px;
+      width: 36px;
+      height: 10px;
+      background: #00a800;
+      border: 2px solid #000;
+    }
+    .pipe-shine {
+      position: absolute;
+      top: 0;
+      left: 4px;
+      width: 4px;
+      height: 100%;
+      background: #80d010;
+    }
+
+    .p-1 { left: 180px; height: 32px; } /* Röhre 1 */
+    .p-2 { left: 600px; height: 48px; } /* Röhre 2 */
+
+    /* Blöcke */
+    .block {
+      position: absolute;
+      width: 16px;
+      height: 16px;
+      border: 1px solid #000;
+    }
+
+    .brick {
+      background-color: #c84c0c;
+      background-image: url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" shape-rendering="crispEdges"><rect x="0" y="0" width="16" height="16" fill="%23c84c0c"/><path d="M0 0h16v16H0z" fill="none" stroke="%23000" stroke-width="1"/><path d="M0 8h16M8 0v8M8 8v8" stroke="%23000" stroke-width="1"/></svg>');
+    }
+
+    .q-block {
+      background-color: #fc9838;
+      -webkit-animation: q-blink 0.6s steps(2) infinite;
+      animation: q-blink 0.6s steps(2) infinite;
+    }
+    .q-block::after {
+      content: '?';
+      position: absolute;
+      top: -2px;
+      left: 3px;
+      font-weight: bold;
+      font-size: 12px;
+      color: #000;
+    }
+
+    /* Block Formationen */
+    .b-1 { left: 260px; bottom: 80px; }
+    .b-2 { left: 276px; bottom: 80px; }
+    .b-3 { left: 292px; bottom: 80px; }
+
+    .b-4 { left: 680px; bottom: 88px; }
+    .b-5 { left: 696px; bottom: 88px; }
+
+    /* Rotierende / Schwebende Münzen */
+    .coin {
+      position: absolute;
+      width: 10px;
+      height: 14px;
+      background-color: #fce000;
+      border: 1px solid #000;
+      border-radius: 4px;
+      -webkit-animation: coin-float 0.4s ease-in-out infinite alternate;
+      animation: coin-float 0.4s ease-in-out infinite alternate;
+    }
+    .c-1 { left: 278px; bottom: 102px; }
+    .c-2 { left: 420px; bottom: 75px; }  /* Münze über Gap 1 */
+    .c-3 { left: 683px; bottom: 110px; }
+    .c-4 { left: 845px; bottom: 80px; }  /* Münze über Gap 2 */
+
+    /* --- MARIO CHARACTER & SPRITE POSES ---
+       Mario verbleibt auf X = 90px. Die Welt bewegt sich unter ihm durch.
+    */
+    .mario-wrapper {
+      position: absolute;
+      left: 90px;
+      bottom: 32px;
+      width: 16px;
+      height: 16px;
+      z-index: 10;
+      -webkit-animation: mario-jump-physics 8s linear infinite;
+      animation: mario-jump-physics 8s linear infinite;
+    }
+
+    /* Mario Pixel-Art Container */
+    .mario-pixel {
+      position: absolute;
+      width: 1px;
+      height: 1px;
+      top: 0;
+      left: 0;
+    }
+
+    /* POSE 1: LAUFPOSITION (Wechselt Beine per Animation) */
+    .mario-run {
+      box-shadow:
+        3px 0 #f83800, 4px 0 #f83800, 5px 0 #f83800, 6px 0 #f83800, 7px 0 #f83800,
+        2px 1px #f83800, 3px 1px #f83800, 4px 1px #f83800, 5px 1px #f83800, 6px 1px #f83800, 7px 1px #f83800, 8px 1px #f83800, 9px 1px #f83800,
+        2px 2px #000, 3px 2px #000, 4px 2px #000, 5px 2px #fc9838, 6px 2px #fc9838, 7px 2px #000, 8px 2px #fc9838,
+        1px 3px #000, 2px 3px #fc9838, 3px 3px #000, 4px 3px #fc9838, 5px 3px #fc9838, 6px 3px #fc9838, 7px 3px #000, 8px 3px #fc9838, 9px 3px #fc9838, 10px 3px #fc9838,
+        1px 4px #000, 2px 4px #fc9838, 3px 4px #000, 4px 4px #000, 5px 4px #fc9838, 6px 4px #fc9838, 7px 4px #fc9838, 8px 4px #000, 9px 4px #fc9838, 10px 4px #fc9838, 11px 4px #fc9838,
+        1px 5px #000, 2px 5px #000, 3px 5px #fc9838, 4px 5px #fc9838, 5px 5px #fc9838, 6px 5px #fc9838, 7px 5px #000, 8px 5px #000, 9px 5px #000, 10px 5px #000,
+        3px 6px #fc9838, 4px 6px #fc9838, 5px 6px #fc9838, 6px 6px #fc9838, 7px 6px #fc9838, 8px 6px #fc9838,
+        2px 7px #0058f8, 3px 7px #0058f8, 4px 7px #f83800, 5px 7px #0058f8, 6px 7px #0058f8, 7px 7px #0058f8,
+        1px 8px #0058f8, 2px 8px #0058f8, 3px 8px #0058f8, 4px 8px #f83800, 5px 8px #0058f8, 6px 8px #0058f8, 7px 8px #f83800, 8px 8px #0058f8, 9px 8px #0058f8, 10px 8px #0058f8,
+        0px 9px #0058f8, 1px 9px #0058f8, 2px 9px #0058f8, 3px 9px #0058f8, 4px 9px #f83800, 5px 9px #f83800, 6px 9px #f83800, 7px 9px #f83800, 8px 9px #0058f8, 9px 9px #0058f8, 10px 9px #0058f8, 11px 9px #0058f8,
+        0px 10px #fc9838, 1px 10px #fc9838, 2px 10px #0058f8, 3px 10px #f83800, 4px 10px #fc9838, 5px 10px #f83800, 6px 10px #f83800, 7px 10px #fc9838, 8px 10px #f83800, 9px 10px #0058f8, 10px 10px #fc9838, 11px 10px #fc9838,
+        0px 11px #fc9838, 1px 11px #fc9838, 2px 11px #fc9838, 3px 11px #f83800, 4px 11px #f83800, 5px 11px #f83800, 6px 11px #f83800, 7px 11px #f83800, 8px 11px #f83800, 9px 11px #fc9838, 10px 11px #fc9838, 11px 11px #fc9838,
+        2px 12px #f83800, 3px 12px #f83800, 4px 12px #f83800, 7px 12px #f83800, 8px 12px #f83800, 9px 12px #f83800,
+        1px 13px #000, 2px 13px #000, 3px 13px #000, 8px 13px #000, 9px 13px #000, 10px 13px #000,
+        0px 14px #000, 1px 14px #000, 2px 14px #000, 3px 14px #000, 8px 14px #000, 9px 14px #000, 10px 14px #000, 11px 14px #000;
+      -webkit-animation: mario-leg-bounce 0.15s steps(2) infinite, pose-switch 8s linear infinite;
+      animation: mario-leg-bounce 0.15s steps(2) infinite, pose-switch 8s linear infinite;
+    }
+
+    /* POSE 2: SPRUNGPOSE (Gestreckter Arm nach oben & angewinkeltes Bein) */
+    .mario-jump {
+      box-shadow:
+        7px -2px #f83800, 8px -2px #f83800, 9px -2px #f83800,
+        7px -1px #fc9838, 8px -1px #fc9838, 9px -1px #fc9838,
+        3px 0 #f83800, 4px 0 #f83800, 5px 0 #f83800, 6px 0 #f83800, 7px 0 #f83800,
+        2px 1px #f83800, 3px 1px #f83800, 4px 1px #f83800, 5px 1px #f83800, 6px 1px #f83800, 7px 1px #f83800, 8px 1px #f83800,
+        2px 2px #000, 3px 2px #000, 4px 2px #000, 5px 2px #fc9838, 6px 2px #fc9838, 7px 2px #000,
+        1px 3px #000, 2px 3px #fc9838, 3px 3px #000, 4px 3px #fc9838, 5px 3px #fc9838, 6px 3px #fc9838, 7px 3px #000, 8px 3px #fc9838,
+        1px 4px #000, 2px 4px #fc9838, 3px 4px #000, 4px 4px #000, 5px 4px #fc9838, 6px 4px #fc9838, 7px 4px #fc9838, 8px 4px #000, 9px 4px #fc9838,
+        1px 5px #000, 2px 5px #000, 3px 5px #fc9838, 4px 5px #fc9838, 5px 5px #fc9838, 6px 5px #fc9838, 7px 5px #000, 8px 5px #000,
+        3px 6px #fc9838, 4px 6px #fc9838, 5px 6px #fc9838, 6px 6px #fc9838, 7px 6px #fc9838,
+        2px 7px #0058f8, 3px 7px #0058f8, 4px 7px #f83800, 5px 7px #0058f8, 6px 7px #0058f8,
+        1px 8px #0058f8, 2px 8px #0058f8, 3px 8px #0058f8, 4px 8px #f83800, 5px 8px #0058f8, 6px 8px #0058f8, 7px 8px #f83800,
+        0px 9px #0058f8, 1px 9px #0058f8, 2px 9px #0058f8, 3px 9px #0058f8, 4px 9px #f83800, 5px 9px #f83800, 6px 9px #f83800, 7px 9px #f83800,
+        0px 10px #fc9838, 1px 10px #fc9838, 2px 10px #0058f8, 3px 10px #f83800, 4px 10px #fc9838, 5px 10px #f83800, 6px 10px #f83800,
+        0px 11px #fc9838, 1px 11px #fc9838, 2px 11px #fc9838, 3px 11px #f83800, 4px 11px #f83800, 5px 11px #f83800, 6px 11px #f83800,
+        2px 12px #f83800, 3px 12px #f83800, 4px 12px #f83800, 8px 12px #f83800, 9px 12px #f83800,
+        1px 13px #000, 2px 13px #000, 3px 13px #000, 8px 13px #000, 9px 13px #000, 10px 13px #000,
+        0px 14px #000, 1px 14px #000, 2px 14px #000, 8px 14px #000, 9px 14px #000, 10px 14px #000;
+      opacity: 0;
+      -webkit-animation: jump-pose-switch 8s linear infinite;
+      animation: jump-pose-switch 8s linear infinite;
+    }
+
+    /* --- ANIMATIONS & TIMING SYNCHRONISATION --- */
+
+    /* 1. Wolken-Parallax (Langsam) */
+    @-webkit-keyframes cloud-scroll {
+      0% { -webkit-transform: translateX(0); }
+      100% { -webkit-transform: translateX(-400px); }
+    }
+    @keyframes cloud-scroll {
+      0% { transform: translateX(0); }
+      100% { transform: translateX(-400px); }
+    }
+
+    /* 2. Welt-Bewegung (Loop = 8 Sekunden / 800px Strecke) */
+    @-webkit-keyframes world-move {
+      0% { -webkit-transform: translateX(0px); }
+      100% { -webkit-transform: translateX(-800px); }
+    }
+    @keyframes world-move {
+      0% { transform: translateX(0px); }
+      100% { transform: translateX(-800px); }
+    }
+
+    /* 3. Beinbewegung beim Laufen */
+    @-webkit-keyframes mario-leg-bounce {
+      0% { -webkit-transform: translateY(0); }
+      100% { -webkit-transform: translateY(-1px); }
+    }
+    @keyframes mario-leg-bounce {
+      0% { transform: translateY(0); }
+      100% { transform: translateY(-1px); }
+    }
+
+    /* 4. Fragezeichen-Block Blinken */
+    @-webkit-keyframes q-blink {
+      0% { background-color: #fc9838; }
+      100% { background-color: #e45c10; }
+    }
+    @keyframes q-blink {
+      0% { background-color: #fc9838; }
+      100% { background-color: #e45c10; }
+    }
+
+    /* 5. Münz-Schweben */
+    @-webkit-keyframes coin-float {
+      0% { -webkit-transform: translateY(0); }
+      100% { -webkit-transform: translateY(-5px); }
+    }
+    @keyframes coin-float {
+      0% { transform: translateY(0); }
+      100% { transform: translateY(-5px); }
+    }
+
+    /* 6. MARIO SPRUNG-PHYSIK (Exakt abgestimmt auf Welt-Distanz)
+       Mario (X=90px fixed).
+       - Röhre 1 trifft Mario bei t = 0.60s (X=180 in Welt)
+       - Blöcke treffen Mario bei t = 1.13s (X=260 in Welt)
+       - GAP 1 erreicht Mario bei t = 1.93s (Welt X=380 -> Abgrund bis X=470)
+       - Röhre 2 trifft Mario bei t = 3.40s (X=600 in Welt)
+       - GAP 2 erreicht Mario bei t = 4.73s (Welt X=800 -> Abgrund bis X=900)
+    */
+    @-webkit-keyframes mario-jump-physics {
+      0% { bottom: 32px; }
+
+      /* Sprung 1: Über Röhre 1 */
+      5.5% { bottom: 32px; }
+      8%   { bottom: 68px; }  /* Scheitelpunkt über Röhre 1 */
+      10.5%{ bottom: 32px; }
+
+      /* Sprung 2: Auf Blöcke */
+      13%  { bottom: 32px; }
+      16%  { bottom: 96px; }  /* Landung auf Block-Höhe */
+      21%  { bottom: 96px; }  /* Läuft über die Blöcke */
+      23.5%{ bottom: 32px; }  /* Hüpft von Blöcken wieder runter */
+
+      /* Sprung 3: PHYSIKALISCHER SPRUNG ÜBER GAP 1 (Abgrund 1) */
+      24%  { bottom: 32px; }  /* Absprung genau an der Kante bei X=380 */
+      27.5%{ bottom: 85px; }  /* Parabel-Scheitelpunkt mitten über dem Loch */
+      31%  { bottom: 32px; }  /* Sichere Landung auf Boden 2 (X=470) */
+
+      /* Sprung 4: Über Röhre 2 */
+      39%  { bottom: 32px; }
+      42.5%{ bottom: 84px; }  /* Scheitelpunkt über der höheren Röhre */
+      46%  { bottom: 32px; }
+
+      /* Sprung 5: PHYSIKALISCHER SPRUNG ÜBER GAP 2 (Abgrund 2) */
+      58%  { bottom: 32px; }  /* Absprung an der Kante bei X=800 */
+      62%  { bottom: 90px; }  /* Hohe Parabel über breites Loch */
+      66%  { bottom: 32px; }  /* Landung auf Boden 3 (X=900) */
+
+      100% { bottom: 32px; }
+    }
+
+    @keyframes mario-jump-physics {
+      0% { bottom: 32px; }
+
+      /* Sprung 1: Über Röhre 1 */
+      5.5% { bottom: 32px; }
+      8%   { bottom: 68px; }
+      10.5%{ bottom: 32px; }
+
+      /* Sprung 2: Auf Blöcke */
+      13%  { bottom: 32px; }
+      16%  { bottom: 96px; }
+      21%  { bottom: 96px; }
+      23.5%{ bottom: 32px; }
+
+      /* Sprung 3: PHYSIKALISCHER SPRUNG ÜBER GAP 1 (Abgrund 1) */
+      24%  { bottom: 32px; }
+      27.5%{ bottom: 85px; }
+      31%  { bottom: 32px; }
+
+      /* Sprung 4: Über Röhre 2 */
+      39%  { bottom: 32px; }
+      42.5%{ bottom: 84px; }
+      46%  { bottom: 32px; }
+
+      /* Sprung 5: PHYSIKALISCHER SPRUNG ÜBER GAP 2 (Abgrund 2) */
+      58%  { bottom: 32px; }
+      62%  { bottom: 90px; }
+      66%  { bottom: 32px; }
+
+      100% { bottom: 32px; }
+    }
+
+    /* Visueller Wechsel der Sprung- / Lauf-Pose */
+    @-webkit-keyframes pose-switch {
+      0%, 5.5% { opacity: 1; }
+      5.6%, 10.4% { opacity: 0; } /* Sprung 1 */
+      10.5%, 13% { opacity: 1; }
+      13.1%, 15.9% { opacity: 0; } /* Sprung auf Block */
+      16%, 21% { opacity: 1; }     /* Laufen auf Block */
+      21.1%, 30.9% { opacity: 0; } /* Sprung über Gap 1 */
+      31%, 39% { opacity: 1; }
+      39.1%, 45.9% { opacity: 0; } /* Sprung über Röhre 2 */
+      46%, 58% { opacity: 1; }
+      58.1%, 65.9% { opacity: 0; } /* Sprung über Gap 2 */
+      66%, 100% { opacity: 1; }
+    }
+    @keyframes pose-switch {
+      0%, 5.5% { opacity: 1; }
+      5.6%, 10.4% { opacity: 0; }
+      10.5%, 13% { opacity: 1; }
+      13.1%, 15.9% { opacity: 0; }
+      16%, 21% { opacity: 1; }
+      21.1%, 30.9% { opacity: 0; }
+      31%, 39% { opacity: 1; }
+      39.1%, 45.9% { opacity: 0; }
+      46%, 58% { opacity: 1; }
+      58.1%, 65.9% { opacity: 0; }
+      66%, 100% { opacity: 1; }
+    }
+
+    @-webkit-keyframes jump-pose-switch {
+      0%, 5.5% { opacity: 0; }
+      5.6%, 10.4% { opacity: 1; } /* Sprung 1 */
+      10.5%, 13% { opacity: 0; }
+      13.1%, 15.9% { opacity: 1; } /* Sprung auf Block */
+      16%, 21% { opacity: 0; }
+      21.1%, 30.9% { opacity: 1; } /* Sprung über Gap 1 */
+      31%, 39% { opacity: 0; }
+      39.1%, 45.9% { opacity: 1; } /* Sprung über Röhre 2 */
+      46%, 58% { opacity: 0; }
+      58.1%, 65.9% { opacity: 1; } /* Sprung über Gap 2 */
+      66%, 100% { opacity: 0; }
+    }
+    @keyframes jump-pose-switch {
+      0%, 5.5% { opacity: 0; }
+      5.6%, 10.4% { opacity: 1; }
+      10.5%, 13% { opacity: 0; }
+      13.1%, 15.9% { opacity: 1; }
+      16%, 21% { opacity: 0; }
+      21.1%, 30.9% { opacity: 1; }
+      31%, 39% { opacity: 0; }
+      39.1%, 45.9% { opacity: 1; }
+      46%, 58% { opacity: 0; }
+      58.1%, 65.9% { opacity: 1; }
+      66%, 100% { opacity: 0; }
+    }
+  </style>
+</head>
+<body>
+
+  <!-- Exaktes 3DS XL Display Viewport (400x240 Pixel) -->
+  <div class="viewport">
+    
+    <!-- Parallax Wolken -->
+    <div class="clouds"></div>
+
+    <!-- Mario Spielfigur (Physik-bewirkte Sprungbewegung) -->
+    <div class="mario-wrapper">
+      <div class="mario-pixel mario-run"></div>
+      <div class="mario-pixel mario-jump"></div>
+    </div>
+
+    <!-- Parcur-Level & Weltobjekte -->
+    <div class="bushes"></div>
+    <div class="level-world">
+      
+      <!-- Erdbodensegmente mit Löchern -->
+      <div class="ground g-1"></div>
+      <!-- Gap 1 (Loch 1) von 380px bis 470px -->
+      <div class="ground g-2"></div>
+      <!-- Gap 2 (Loch 2) von 800px bis 900px -->
+      <div class="ground g-3"></div>
+
+      <!-- Grüne Röhren -->
+      <div class="pipe p-1"><div class="pipe-shine"></div></div>
+      <div class="pipe p-2"><div class="pipe-shine"></div></div>
+
+      <!-- Ziegel & Fragezeichenblöcke -->
+      <div class="block brick b-1"></div>
+      <div class="block q-block b-2"></div>
+      <div class="block brick b-3"></div>
+
+      <div class="block q-block b-4"></div>
+      <div class="block brick b-5"></div>
+
+      <!-- Schwebende Münzen -->
+      <div class="coin c-1"></div>
+      <div class="coin c-2"></div>
+      <div class="coin c-3"></div>
+      <div class="coin c-4"></div>
+
+    </div>
+
+  </div>
+
+</body>
+</html>
